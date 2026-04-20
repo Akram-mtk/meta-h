@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 # Import modular components
 from benchmark_functions import FUNCTIONS, evaluate_population
 from pso import PSO, run_multiple_PSO, PSO_feature_selection
-from genetic_algorithm import GA_feature_selection
+from tp8_ga_variants import GA_variant1, GA_variant2, GA_variant3
 from utils import (
     get_dataset, compute_grid, create_contour_plot,
     create_convergence_plot, pad_convergence_curves, aggregate_results
@@ -283,7 +283,7 @@ st.divider()
 #  PART 6: PSO FOR FEATURE SELECTION
 # ============================================================
 
-st.markdown("## Part 6 — Feature Selection with PSO")
+st.markdown("## Part 4 — Feature Selection with PSO")
 st.divider()
 
 col_fs_l, col_fs_r = st.columns(2)
@@ -364,7 +364,7 @@ st.divider()
 #  PART 7: GA FOR FEATURE SELECTION
 # ============================================================
 
-st.markdown("## Part 7 — Feature Selection with Genetic Algorithm")
+st.markdown("## Part 5 — Feature Selection with Genetic Algorithm")
 st.divider()
 
 col_ga_l, col_ga_r = st.columns(2)
@@ -439,6 +439,274 @@ if st.session_state.ga_result is not None:
 
 st.divider()
 
+
+# ============================================================
+#  TP8 — GENETIC ALGORITHM VARIANTS (Part 2)
+# ============================================================
+
+st.markdown("## 68 — Genetic Algorithm Variants")
+st.markdown("### Three GA Variants for Feature Selection")
+st.divider()
+
+# Tabs for the three variants
+tp8_tab1, tp8_tab2, tp8_tab3 = st.tabs([
+    "Variant 1: 1-Point Crossover", 
+    "Variant 2: 2-Point Crossover", 
+    "Variant 3: 3-Point Crossover"
+])
+
+# ============================================================
+# VARIANT 1: ONE-POINT CROSSOVER
+# ============================================================
+
+with tp8_tab1:
+    st.markdown("### Variant 1: One-Point Crossover + Children Replacement")
+    st.write("""
+    **Crossover**: Exchanges segments at one random position  
+    **Replacement**: Children-only (full generational replacement)  
+    **Characteristics**: Simple, explores search space broadly
+    """)
+    
+    col_v1_l, col_v1_r = st.columns(2)
+    
+    with col_v1_l:
+        st.markdown("**Feature Selection Parameters**")
+        v1_dataset = st.radio("Dataset##v1", ["Synthetic", "Digits"], horizontal=True, key="v1_data")
+        v1_alpha = st.number_input("α##v1", value=0.99, format="%.2f", step=0.01, key="v1_alpha")
+        st.markdown("**GA Parameters**")
+        v1_rc = st.number_input("Rc (Crossover)##v1", value=0.70, format="%.2f", step=0.05, key="v1_rc")
+        v1_rm = st.number_input("Rm (Mutation)##v1", value=0.10, format="%.2f", step=0.01, key="v1_rm")
+    
+    with col_v1_r:
+        st.markdown("**Metaheuristic Parameters**")
+        v1_pop = st.slider("Population (N)##v1", 5, 50, 10, key="v1_pop")
+        v1_iter = st.slider("Max Iteration (T)##v1", 5, 200, 20, key="v1_iter")
+        v1_runs = st.slider("Runs##v1", 1, 50, 15, key="v1_runs")
+        v1_eval_btn = st.button("Evaluation##v1", key="v1_eval", use_container_width=True)
+    
+    X1_train, X1_test, y1_train, y1_test = get_dataset(v1_dataset)
+    
+    if "v1_result" not in st.session_state:
+        st.session_state.v1_result = None
+    
+    if v1_eval_btn:
+        with st.spinner(f"Running {v1_runs} Variant 1 experiments..."):
+            all_best = []
+            all_acc = []
+            all_sel = []
+            all_conv = []
+            all_avg = []
+            
+            for _ in range(v1_runs):
+                res = GA_variant1(X1_train, X1_test, y1_train, y1_test,
+                    N=v1_pop, T=v1_iter, Rc=v1_rc, Rm=v1_rm, alpha=v1_alpha)
+                all_best.append(res["gBest_fit"])
+                all_acc.append(res["gBest_acc"])
+                all_sel.append(res["n_selected"])
+                all_conv.append(res["convergence"])
+                all_avg.append(res["avg_fitness"])
+            
+            all_best = np.array(all_best)
+            padded_conv = pad_convergence_curves(all_conv)
+            padded_avg = pad_convergence_curves(all_avg)
+            best_idx = np.argmin(all_best)
+            
+            st.session_state.v1_result = {
+                "Best": np.min(all_best),
+                "AVG": np.mean(all_best),
+                "STD": np.std(all_best, ddof=1),
+                "best_acc": all_acc[best_idx],
+                "best_sel": all_sel[best_idx],
+                "mean_conv": np.mean(padded_conv, axis=0),
+                "mean_avg": np.mean(padded_avg, axis=0)
+            }
+    
+    if st.session_state.v1_result is not None:
+        r = st.session_state.v1_result
+        st.success(f"**Best Error** — {r['Best']:.4f}, **Mean Error** — {r['AVG']:.4f}, "
+                   f"**Accuracy** — {r['best_acc']:.2f}, **Features Selected** — {r['best_sel']}, "
+                   f"**STD** — {r['STD']:.4f}")
+        
+        cc, ca = st.columns(2)
+        with cc:
+            fig, ax = create_convergence_plot(r["mean_conv"], "Convergence Curve (Variant 1)", color="red")
+            st.pyplot(fig)
+            plt.close()
+        with ca:
+            fig, ax = create_convergence_plot(r["mean_avg"], "Average Fitness (Variant 1)", color="blue")
+            st.pyplot(fig)
+            plt.close()
+
+
+# ============================================================
+# VARIANT 2: TWO-POINT CROSSOVER
+# ============================================================
+
+with tp8_tab2:
+    st.markdown("### Variant 2: Two-Point Crossover + Children Replacement")
+    st.write("""
+    **Crossover**: Exchanges middle segment between two random positions  
+    **Replacement**: Children-only (full generational replacement)  
+    **Characteristics**: Preserves genetic structure better than 1-point, moderate exploration
+    """)
+    
+    col_v2_l, col_v2_r = st.columns(2)
+    
+    with col_v2_l:
+        st.markdown("**Feature Selection Parameters**")
+        v2_dataset = st.radio("Dataset##v2", ["Synthetic", "Digits"], horizontal=True, key="v2_data")
+        v2_alpha = st.number_input("α##v2", value=0.99, format="%.2f", step=0.01, key="v2_alpha")
+        st.markdown("**GA Parameters**")
+        v2_rc = st.number_input("Rc (Crossover)##v2", value=0.70, format="%.2f", step=0.05, key="v2_rc")
+        v2_rm = st.number_input("Rm (Mutation)##v2", value=0.10, format="%.2f", step=0.01, key="v2_rm")
+    
+    with col_v2_r:
+        st.markdown("**Metaheuristic Parameters**")
+        v2_pop = st.slider("Population (N)##v2", 5, 50, 10, key="v2_pop")
+        v2_iter = st.slider("Max Iteration (T)##v2", 5, 200, 20, key="v2_iter")
+        v2_runs = st.slider("Runs##v2", 1, 50, 15, key="v2_runs")
+        v2_eval_btn = st.button("Evaluation##v2", key="v2_eval", use_container_width=True)
+    
+    X2_train, X2_test, y2_train, y2_test = get_dataset(v2_dataset)
+    
+    if "v2_result" not in st.session_state:
+        st.session_state.v2_result = None
+    
+    if v2_eval_btn:
+        with st.spinner(f"Running {v2_runs} Variant 2 experiments..."):
+            all_best = []
+            all_acc = []
+            all_sel = []
+            all_conv = []
+            all_avg = []
+            
+            for _ in range(v2_runs):
+                res = GA_variant2(X2_train, X2_test, y2_train, y2_test,
+                    N=v2_pop, T=v2_iter, Rc=v2_rc, Rm=v2_rm, alpha=v2_alpha)
+                all_best.append(res["gBest_fit"])
+                all_acc.append(res["gBest_acc"])
+                all_sel.append(res["n_selected"])
+                all_conv.append(res["convergence"])
+                all_avg.append(res["avg_fitness"])
+            
+            all_best = np.array(all_best)
+            padded_conv = pad_convergence_curves(all_conv)
+            padded_avg = pad_convergence_curves(all_avg)
+            best_idx = np.argmin(all_best)
+            
+            st.session_state.v2_result = {
+                "Best": np.min(all_best),
+                "AVG": np.mean(all_best),
+                "STD": np.std(all_best, ddof=1),
+                "best_acc": all_acc[best_idx],
+                "best_sel": all_sel[best_idx],
+                "mean_conv": np.mean(padded_conv, axis=0),
+                "mean_avg": np.mean(padded_avg, axis=0)
+            }
+    
+    if st.session_state.v2_result is not None:
+        r = st.session_state.v2_result
+        st.success(f"**Best Error** — {r['Best']:.4f}, **Mean Error** — {r['AVG']:.4f}, "
+                   f"**Accuracy** — {r['best_acc']:.2f}, **Features Selected** — {r['best_sel']}, "
+                   f"**STD** — {r['STD']:.4f}")
+        
+        cc, ca = st.columns(2)
+        with cc:
+            fig, ax = create_convergence_plot(r["mean_conv"], "Convergence Curve (Variant 2)", color="red")
+            st.pyplot(fig)
+            plt.close()
+        with ca:
+            fig, ax = create_convergence_plot(r["mean_avg"], "Average Fitness (Variant 2)", color="blue")
+            st.pyplot(fig)
+            plt.close()
+
+
+# ============================================================
+# VARIANT 3: THREE-POINT CROSSOVER
+# ============================================================
+
+with tp8_tab3:
+    st.markdown("### Variant 3: Three-Point Crossover + Best Selection Replacement")
+    st.write("""
+    **Crossover**: Exchanges segments at three random positions  
+    **Replacement**: Best selection (keeps best N from parents + offspring union)  
+    **Characteristics**: Elitist strategy, faster convergence, less exploration
+    """)
+    
+    col_v3_l, col_v3_r = st.columns(2)
+    
+    with col_v3_l:
+        st.markdown("**Feature Selection Parameters**")
+        v3_dataset = st.radio("Dataset##v3", ["Synthetic", "Digits"], horizontal=True, key="v3_data")
+        v3_alpha = st.number_input("α##v3", value=0.99, format="%.2f", step=0.01, key="v3_alpha")
+        st.markdown("**GA Parameters**")
+        v3_rc = st.number_input("Rc (Crossover)##v3", value=0.70, format="%.2f", step=0.05, key="v3_rc")
+        v3_rm = st.number_input("Rm (Mutation)##v3", value=0.10, format="%.2f", step=0.01, key="v3_rm")
+    
+    with col_v3_r:
+        st.markdown("**Metaheuristic Parameters**")
+        v3_pop = st.slider("Population (N)##v3", 5, 50, 10, key="v3_pop")
+        v3_iter = st.slider("Max Iteration (T)##v3", 5, 200, 20, key="v3_iter")
+        v3_runs = st.slider("Runs##v3", 1, 50, 15, key="v3_runs")
+        v3_eval_btn = st.button("Evaluation##v3", key="v3_eval", use_container_width=True)
+    
+    X3_train, X3_test, y3_train, y3_test = get_dataset(v3_dataset)
+    
+    if "v3_result" not in st.session_state:
+        st.session_state.v3_result = None
+    
+    if v3_eval_btn:
+        with st.spinner(f"Running {v3_runs} Variant 3 experiments..."):
+            all_best = []
+            all_acc = []
+            all_sel = []
+            all_conv = []
+            all_avg = []
+            
+            for _ in range(v3_runs):
+                res = GA_variant3(X3_train, X3_test, y3_train, y3_test,
+                    N=v3_pop, T=v3_iter, Rc=v3_rc, Rm=v3_rm, alpha=v3_alpha)
+                all_best.append(res["gBest_fit"])
+                all_acc.append(res["gBest_acc"])
+                all_sel.append(res["n_selected"])
+                all_conv.append(res["convergence"])
+                all_avg.append(res["avg_fitness"])
+            
+            all_best = np.array(all_best)
+            padded_conv = pad_convergence_curves(all_conv)
+            padded_avg = pad_convergence_curves(all_avg)
+            best_idx = np.argmin(all_best)
+            
+            st.session_state.v3_result = {
+                "Best": np.min(all_best),
+                "AVG": np.mean(all_best),
+                "STD": np.std(all_best, ddof=1),
+                "best_acc": all_acc[best_idx],
+                "best_sel": all_sel[best_idx],
+                "mean_conv": np.mean(padded_conv, axis=0),
+                "mean_avg": np.mean(padded_avg, axis=0)
+            }
+    
+    if st.session_state.v3_result is not None:
+        r = st.session_state.v3_result
+        st.success(f"**Best Error** — {r['Best']:.4f}, **Mean Error** — {r['AVG']:.4f}, "
+                   f"**Accuracy** — {r['best_acc']:.2f}, **Features Selected** — {r['best_sel']}, "
+                   f"**STD** — {r['STD']:.4f}")
+        
+        cc, ca = st.columns(2)
+        with cc:
+            fig, ax = create_convergence_plot(r["mean_conv"], "Convergence Curve (Variant 3)", color="red")
+            st.pyplot(fig)
+            plt.close()
+        with ca:
+            fig, ax = create_convergence_plot(r["mean_avg"], "Average Fitness (Variant 3)", color="blue")
+            st.pyplot(fig)
+            plt.close()
+
+st.divider()
+
 # Footer
 st.markdown("---")
 st.markdown("*TP - Metaheuristics | Master 2 SII | USTHB | Prof. I. KHENNAK | 2025/2026*")
+
+
