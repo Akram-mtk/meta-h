@@ -318,12 +318,12 @@ def page_tp3():
             st.session_state["tp3_result"] = res
             st.session_state["tp3_fn_name"] = fn_name
             st.session_state["tp3_range"] = (lb, ub)
-            st.session_state["tp3_fn"] = fn
+            st.session_state["tp3_fn_obj"] = fn
 
     # --- Display results ---
     if "tp3_result" in st.session_state:
         res = st.session_state["tp3_result"]
-        fn_used = st.session_state["tp3_fn"]
+        fn_used = st.session_state["tp3_fn_obj"]
         fn_name_used = st.session_state["tp3_fn_name"]
         lb_used, ub_used = st.session_state["tp3_range"]
 
@@ -432,7 +432,7 @@ def page_tp4():
             st.session_state["tp4_bests"] = np.array(all_bests)
             st.session_state["tp4_fn_name"] = fn_name
             st.session_state["tp4_range"] = (lb, ub)
-            st.session_state["tp4_fn"] = fn
+            st.session_state["tp4_fn_obj"] = fn
             st.session_state["tp4_params"] = {
                 "Fonction": fn_name, "RUN": int(n_runs),
                 "ITERATION": int(max_iter), "POPULATION": int(pop_size),
@@ -442,7 +442,7 @@ def page_tp4():
     if "tp4_result" in st.session_state:
         res = st.session_state["tp4_result"]
         bests = st.session_state["tp4_bests"]
-        fn_used = st.session_state["tp4_fn"]
+        fn_used = st.session_state["tp4_fn_obj"]
         fn_name_used = st.session_state["tp4_fn_name"]
         lb_used, ub_used = st.session_state["tp4_range"]
         params = st.session_state["tp4_params"]
@@ -531,11 +531,11 @@ def page_tp7():
             st.session_state["tp7_result"] = res
             st.session_state["tp7_fn_name"] = fn_name
             st.session_state["tp7_range"] = (lb, ub)
-            st.session_state["tp7_fn"] = fn
+            st.session_state["tp7_fn_obj"] = fn
 
     if "tp7_result" in st.session_state:
         res = st.session_state["tp7_result"]
-        fn_used = st.session_state["tp7_fn"]
+        fn_used = st.session_state["tp7_fn_obj"]
         fn_name_used = st.session_state["tp7_fn_name"]
         lb_used, ub_used = st.session_state["tp7_range"]
 
