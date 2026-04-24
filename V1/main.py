@@ -11,10 +11,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Import modular components
-from benchmark_functions import FUNCTIONS, evaluate_population
-from pso import PSO, run_multiple_PSO, PSO_feature_selection
-from tp8_ga_variants import GA_variant1, GA_variant2, GA_variant3
-from utils import (
+from V1.benchmark_functions import FUNCTIONS, evaluate_population
+from V1.pso import PSO, run_multiple_PSO, PSO_feature_selection
+from V1.tp8_ga_variants import GA_variant1, GA_variant2, GA_variant3
+from V1.utils import (
     get_dataset, compute_grid, create_contour_plot,
     create_convergence_plot, pad_convergence_curves, aggregate_results
 )
