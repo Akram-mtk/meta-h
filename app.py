@@ -6,7 +6,7 @@ import streamlit as st
 from benchmarks import FUNCTIONS, get_function, get_min
 from plotting import surface_plot, contour_scatter, line_plot
 from pso import pso
-from ga import ga
+from tps_feature_selection import page_tp5, page_tp6, page_tp7
 
 
 # =============================================================================
@@ -32,7 +32,9 @@ page = st.sidebar.radio(
         "TP N°2 – Population Initialization (Part 2)",
         "TP N°3 – PSO (Part 1)",
         "TP N°4 – PSO (Part 2 - Multiple Runs)",
-        "TP N°7 – Genetic Algorithm",
+        "TP N°5 – Feature Selection with PSO (Part 1)",
+        "TP N°6 – Feature Selection with PSO (Part 2)",
+        "TP N°7 – Genetic Algorithm (Feature Selection)",
     ],
 )
 
@@ -493,100 +495,6 @@ def page_tp4():
 
 
 # =============================================================================
-# TP N°7 - Genetic Algorithm
-# =============================================================================
-def page_tp7():
-
-    st.title("TP - Metaheuristics")
-    st.subheader("Genetic Algorithm")
-
-    with st.container(border=True):
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            fn_name = st.selectbox("Function", list(FUNCTIONS.keys()),
-                                   key="tp7_fn")
-        with c2:
-            dim = st.number_input("Dimension (D)", 2, 1000, 30, key="tp7_dim")
-        with c3:
-            pop_size = st.number_input("Population", 2, 500, 30, key="tp7_pop")
-        with c4:
-            max_iter = st.number_input("Max Iteration (T)", 1, 5000, 200, key="tp7_T")
-
-        c5, c6 = st.columns(2)
-        with c5:
-            pc = st.number_input("Crossover probability (pc)",
-                                 0.0, 1.0, 0.8, step=0.05, key="tp7_pc")
-        with c6:
-            pm = st.number_input("Mutation probability (pm)",
-                                 0.0, 1.0, 0.1, step=0.05, key="tp7_pm")
-
-        run_click = st.button("▶️ Evaluate", key="tp7_run")
-
-        fn, lb, ub, info = get_function(fn_name)
-
-        if run_click:
-            res = ga(fn, int(dim), lb, ub,
-                     pop_size=int(pop_size), max_iter=int(max_iter),
-                     pc=float(pc), pm=float(pm))
-            st.session_state["tp7_result"] = res
-            st.session_state["tp7_fn_name"] = fn_name
-            st.session_state["tp7_range"] = (lb, ub)
-            st.session_state["tp7_fn_obj"] = fn
-
-    if "tp7_result" in st.session_state:
-        res = st.session_state["tp7_result"]
-        fn_used = st.session_state["tp7_fn_obj"]
-        fn_name_used = st.session_state["tp7_fn_name"]
-        lb_used, ub_used = st.session_state["tp7_range"]
-
-        st.markdown("---")
-        col1, col2, col3, col4 = st.columns([1, 1, 1, 0.9])
-        with col1:
-            st.caption(f"Function ({fn_name_used})")
-            st.pyplot(surface_plot(fn_used, lb_used, ub_used, title=""),
-                      use_container_width=True)
-        with col2:
-            st.pyplot(contour_scatter(
-                fn_used, lb_used, ub_used,
-                population=res["initial_population"],
-                best=res["initial_population"][np.argmin(
-                    [fn_used(x) for x in res["initial_population"]])],
-                title=f"Search History ({fn_name_used}), 1st Iteration",
-            ), use_container_width=True)
-        with col3:
-            st.pyplot(contour_scatter(
-                fn_used, lb_used, ub_used,
-                population=res["position_history"][-1],
-                best=res["best_solution"],
-                trail=res["position_history"],
-                title=f"Search History ({fn_name_used}), Final Iteration",
-            ), use_container_width=True)
-        with col4:
-            st.markdown("**Initial population:**")
-            st.markdown(f"**Best** — {res['initial_best']:.2f}, "
-                        f"**Worst** — {res['initial_worst']:.2f}")
-            st.markdown("**Final population:**")
-            st.markdown(f"**Best** — {res['best_fitness']:.4f}")
-
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.pyplot(line_plot(res["convergence_curve"],
-                                title="Convergence Curve", color="red"),
-                      use_container_width=True)
-        with col2:
-            st.pyplot(line_plot(res["trajectory_first"],
-                                title="Trajectory of 1st solution",
-                                ylabel=r"$x_1^{(1)}$",
-                                color="limegreen"),
-                      use_container_width=True)
-        with col3:
-            st.pyplot(line_plot(res["average_fitness_curve"],
-                                title="Average Fitness",
-                                color="royalblue"),
-                      use_container_width=True)
-
-
-# =============================================================================
 # ROUTER
 # =============================================================================
 PAGES = {
@@ -594,7 +502,9 @@ PAGES = {
     "TP N°2 – Population Initialization (Part 2)": page_tp2,
     "TP N°3 – PSO (Part 1)": page_tp3,
     "TP N°4 – PSO (Part 2 - Multiple Runs)": page_tp4,
-    "TP N°7 – Genetic Algorithm": page_tp7,
+    "TP N°5 – Feature Selection with PSO (Part 1)": page_tp5,
+    "TP N°6 – Feature Selection with PSO (Part 2)": page_tp6,
+    "TP N°7 – Genetic Algorithm (Feature Selection)": page_tp7,
 }
 
 PAGES[page]()
